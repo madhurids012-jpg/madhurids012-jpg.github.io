@@ -1,6 +1,6 @@
 # Madhuri B. Patil — portfolio
 
-Single-file personal site (no build step, no framework). Open `index.html` locally or publish with GitHub Pages.
+Single-file personal site. Open `index.html` locally or publish with GitHub Pages.
 
 ## Publish on GitHub Pages
 1. Create a public repo named `<your-github-username>.github.io`.
