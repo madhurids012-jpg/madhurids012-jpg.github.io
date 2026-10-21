@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="author" content="Madhuri Patil"><meta name="description" content="An AI motor-claims desk: first call to payout in minutes, with a human adjuster signing off every rupee. Built by Madhuri Patil with Google ADK 2, Gemini vision, MCP and A2A.">
+<meta property="og:type" content="website"><meta property="og:title" content="ClaimPilot · AI motor-claims desk"><meta property="og:description" content="An AI motor-claims desk: first call to payout in minutes, with a human adjuster signing off every rupee. Built by Madhuri Patil with Google ADK 2, Gemini vision, MCP and A2A."><meta property="og:url" content="https://madhurids012-jpg.github.io/claimpilot/"><meta property="og:image" content="https://madhurids012-jpg.github.io/claimpilot/og.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://madhurids012-jpg.github.io/claimpilot/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚗</text></svg>">
+<title>ClaimPilot Claims Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a claims-file cover - deep ink band with the live claim record, then a calm executive brief keyed to claim stages. */
+:root{
+  --bg:#f4f8f7; --surface:#ffffff; --surface-2:#e9f1f0; --line:#d3e0de; --ink:#0c1a1c; --ink-2:#344a4d; --muted:#647a7c;
+  --accent:#0d9488; --accent-soft:#d9f3ef; --accent-ink:#ffffff;
+  --good:#0f7a5a; --good-soft:#dff3ea; --bad:#c2312b; --bad-soft:#fbe4e2; --info:#4f46e5; --info-soft:#e7e7fb;
+  --band:#071012; --band-2:#0e1c1f; --band-line:#1d3236; --band-ink:#e8f3f1; --band-muted:#8aa3a4; --band-accent:#2dd4bf;
+  --display:"Manrope", "Segoe UI", system-ui, sans-serif;
+  --body:"Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#070c0e; --surface:#0f181b; --surface-2:#142226; --line:#21363a; --ink:#e8f3f1; --ink-2:#b5c9c8; --muted:#82999a;
+  --accent:#2dd4bf; --accent-soft:#0f2e2b; --accent-ink:#04201c;
+  --good:#3ccf97; --good-soft:#0f2e24; --bad:#ff6b63; --bad-soft:#3a1716; --info:#a5b4fc; --info-soft:#1c1f45;
+  --band:#04090a; --band-2:#0c1719; --band-line:#1b2e31; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#070c0e; --surface:#0f181b; --surface-2:#142226; --line:#21363a; --ink:#e8f3f1; --ink-2:#b5c9c8; --muted:#82999a;
+  --accent:#2dd4bf; --accent-soft:#0f2e2b; --accent-ink:#04201c;
+  --good:#3ccf97; --good-soft:#0f2e24; --bad:#ff6b63; --bad-soft:#3a1716; --info:#a5b4fc; --info-soft:#1c1f45;
+  --band:#04090a; --band-2:#0c1719; --band-line:#1b2e31; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h2{font-size:clamp(1.6rem,1.2rem + 1.6vw,2.3rem);line-height:1.15;font-weight:700}
+h3{font-size:1.12rem;font-weight:700;line-height:1.3}
+p{margin:0}
+a{color:inherit}
+.mono{font-family:var(--mono)}
+.eyebrow{font:500 .74rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:1.08rem;color:var(--ink-2);max-width:62ch}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--band) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--band-line);color:var(--band-ink)}
+.top .wrap{display:flex;align-items:center;gap:20px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;font:700 1.02rem var(--display);white-space:nowrap}
+.brand svg{flex:none}
+.nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto}
+.nav a{color:var(--band-muted);text-decoration:none;font-size:.86rem;padding:6px 10px;border-radius:6px;white-space:nowrap}
+.nav a:hover{color:var(--band-ink);background:var(--band-2)}
+
+/* hero band */
+.hero{background:var(--band);color:var(--band-ink);border-bottom:1px solid var(--band-line)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;padding-block:56px 48px;align-items:center}
+.hero h1{font-size:clamp(2rem,1.4rem + 2.8vw,3.4rem);line-height:1.05;font-weight:700;margin:14px 0 18px}
+.hero h1 em{font-style:normal;color:var(--band-accent)}
+.hero .lead{color:#b6c1d2}
+.hero .eyebrow{color:var(--band-accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.chip{font:500 .76rem var(--mono);padding:5px 10px;border-radius:999px;border:1px solid var(--band-line);color:#c8d1df;background:var(--band-2)}
+.record{background:var(--band-2);border:1px solid var(--band-line);border-radius:14px;overflow:hidden;font-size:.9rem}
+.record-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--band-line)}
+.sev{font:600 .72rem var(--mono);padding:3px 8px;border-radius:5px;background:#c2312b;color:#fff}
+.pill{font:500 .72rem var(--mono);padding:3px 9px;border-radius:999px;border:1px solid #1e6b52;color:#4fe0a8;background:#0c2a20}
+.record-title{padding:12px 16px 4px;font:600 1rem var(--body)}
+.record-alert{padding:0 16px 12px;color:#ff8a83;font:400 .82rem var(--mono)}
+.tl{list-style:none;margin:0;padding:6px 16px 16px;display:grid;gap:9px}
+.tl li{display:grid;grid-template-columns:62px 12px minmax(0,1fr);gap:8px;align-items:start}
+.tl time{font:400 .76rem var(--mono);color:var(--band-muted);padding-top:2px}
+.tl i{width:8px;height:8px;border-radius:50%;margin-top:7px;background:#7aa2ff}
+.tl .h i{background:var(--band-accent)} .tl .g i{background:#3ccf97} .tl .p i{background:#ff6b63}
+.tl span{color:#d5dce8}
+.tl b{font-weight:600;color:#fff}
+
+/* demo note */
+.note{display:flex;gap:10px;align-items:flex-start;font-size:.86rem;color:var(--muted);padding:14px 16px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}
+.note strong{color:var(--ink-2)}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-top:-28px;position:relative;overflow:hidden}
+.kpi{padding:20px 22px;border-right:1px solid var(--line)}
+.kpi:last-child{border-right:0}
+.kpi .v{font:700 2rem/1.1 var(--display);font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:.95rem;color:var(--muted);font-weight:500;margin-left:3px}
+.kpi .l{font-size:.86rem;color:var(--ink-2);margin-top:6px}
+.kpi .s{font:400 .72rem var(--mono);color:var(--muted);margin-top:6px;letter-spacing:.02em}
+
+section.block{padding-block:72px 8px}
+.sec-head{display:grid;gap:12px;margin-bottom:32px;max-width:760px}
+
+/* problem / jobs */
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.card p{color:var(--ink-2);font-size:.95rem;margin-top:8px}
+.card .tag{font:500 .72rem var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.flow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.flow .st{padding:18px 16px;border-right:1px solid var(--line);position:relative;min-width:0}
+.flow .st:last-child{border-right:0}
+.flow .st .n{font:500 .72rem var(--mono);color:var(--muted)}
+.flow .st h3{font-size:1rem;margin:6px 0 6px}
+.flow .st p{font-size:.86rem;color:var(--ink-2)}
+.flow .st.gate{background:var(--accent-soft)}
+.flow .st.gate .n{color:var(--accent);font-weight:600}
+.flow .who{display:inline-block;margin-top:10px;font:500 .7rem var(--mono);padding:2px 7px;border-radius:4px;background:var(--surface-2);color:var(--ink-2)}
+.flow .gate .who{background:var(--accent);color:var(--accent-ink)}
+
+/* walkthrough */
+.walk{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;align-items:start}
+.walk>*{min-width:0}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:4px;position:sticky;top:76px}
+.steps button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;width:100%;padding:10px 12px;border-radius:8px;cursor:pointer;color:var(--ink-2);border:1px solid transparent}
+.steps button:hover{background:var(--surface)}
+.steps button[aria-selected="true"]{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.steps .k{font:500 .78rem var(--mono);color:var(--muted);padding-top:2px}
+.steps button[aria-selected="true"] .k{color:var(--accent);font-weight:600}
+.steps .t{font-weight:600;font-size:.93rem;line-height:1.35}
+.steps .phase{display:block;font:400 .72rem var(--mono);color:var(--muted);margin-top:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.shot{display:block;width:100%;background:var(--band);border:0;padding:0;cursor:zoom-in;border-bottom:1px solid var(--line)}
+.shot img{display:block;width:100%;height:auto;max-height:620px;object-fit:contain;margin:0 auto}
+.stage-body{padding:22px 24px 24px;display:grid;gap:18px}
+.stage-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.stage-top h3{font-size:1.3rem}
+.ctrl{display:flex;gap:8px}
+.btn{font:500 .86rem var(--body);padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.cols3 h4{margin:0 0 6px;font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cols3 p{font-size:.93rem;color:var(--ink-2)}
+.cols3 .biz h4{color:var(--accent)}
+.progress{height:3px;background:var(--surface-2)}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+
+/* ROI */
+.roi{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.roi-in{padding:24px;display:grid;gap:16px;border-right:1px solid var(--line)}
+.field{display:grid;gap:6px}
+.field label{display:flex;justify-content:space-between;gap:12px;font-size:.88rem;color:var(--ink-2)}
+.field output{font:500 .88rem var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.field input[type=range]{width:100%;accent-color:var(--accent)}
+.field .hint{font-size:.76rem;color:var(--muted)}
+.cur{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--muted)}
+.cur select{font:inherit;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.roi-out{padding:24px;display:grid;gap:14px;align-content:start;background:var(--surface-2)}
+.big{font:700 clamp(2rem,1.5rem + 2vw,2.8rem)/1 var(--display);font-variant-numeric:tabular-nums;color:var(--good)}
+.out-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.out-row span:last-child{font:500 .95rem var(--mono);font-variant-numeric:tabular-nums}
+.bars{display:grid;gap:8px;margin-top:4px}
+.bar{display:grid;grid-template-columns:90px minmax(0,1fr) 70px;gap:10px;align-items:center;font-size:.82rem;color:var(--ink-2)}
+.bar .tr{height:12px;background:var(--surface);border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.bar .tr i{display:block;height:100%;background:var(--muted);transition:width .3s}
+.bar.after .tr i{background:var(--good)}
+.bar b{font:500 .8rem var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.fine{font-size:.78rem;color:var(--muted)}
+
+/* trust */
+.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.trust>div{background:var(--surface);padding:22px}
+.trust h3{font-size:1rem;display:flex;gap:10px;align-items:center}
+.trust h3 svg{flex:none;color:var(--accent)}
+.trust p{font-size:.9rem;color:var(--ink-2);margin-top:8px}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:720px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td .ok{display:inline-flex;align-items:center;gap:6px;font:500 .78rem var(--mono);color:var(--good);background:var(--good-soft);padding:2px 8px;border-radius:999px;white-space:nowrap}
+td code{font:400 .82rem var(--mono);background:var(--surface-2);padding:1px 6px;border-radius:4px}
+
+/* architecture */
+.arch{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:16px}
+.layer{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:18px}
+.layer .tag{font:500 .7rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.layer h3{margin:4px 0 10px}
+.layer ul{margin:0;padding:0;list-style:none;display:grid;gap:7px;font-size:.88rem;color:var(--ink-2)}
+.layer li{display:flex;gap:8px}
+.layer li::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--accent);margin-top:8px;flex:none}
+.integr{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.integr span{font:500 .78rem var(--mono);padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink-2)}
+.integr span.built{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+/* rollout */
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;counter-reset:ph}
+.phase-c{border-top:3px solid var(--line);padding-top:16px}
+.phase-c.on{border-top-color:var(--accent)}
+.phase-c .when{font:500 .76rem var(--mono);color:var(--muted)}
+.phase-c h3{margin:4px 0 10px}
+.phase-c ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:.92rem;display:grid;gap:6px}
+.phase-c .exit{margin-top:12px;font-size:.84rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.phase-c .exit b{font:500 .7rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:3px}
+
+footer{margin-top:80px;background:var(--band);color:var(--band-muted);border-top:1px solid var(--band-line)}
+footer .wrap{padding-block:36px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;font-size:.88rem}
+footer .wrap>*{min-width:0}
+footer h3{color:var(--band-ink);font-size:1rem;margin-bottom:8px}
+footer pre{margin:0;background:var(--band-2);border:1px solid var(--band-line);border-radius:8px;padding:14px;overflow-x:auto;font:400 .8rem/1.7 var(--mono);color:#c9d3e2}
+
+/* lightbox */
+.lb{position:fixed;inset:0;z-index:50;background:rgba(5,8,13,.88);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
+.lb img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+@media (max-width:980px){
+  .hero .wrap{grid-template-columns:1fr;gap:32px}
+  .walk{grid-template-columns:1fr}
+  .steps{position:static;grid-auto-flow:column;grid-auto-columns:minmax(200px,1fr);overflow-x:auto;padding-bottom:6px}
+  .flow{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .flow .st:nth-child(3){border-right:0}
+  .flow .st:nth-child(-n+3){border-bottom:1px solid var(--line)}
+  .trust,.arch,.grid3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:680px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(2){border-right:0}
+  .kpi:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .grid3,.grid2,.trust,.arch,.phases,.cols3,.roi,footer .wrap{grid-template-columns:1fr}
+  .roi-in{border-right:0;border-bottom:1px solid var(--line)}
+  .flow{grid-template-columns:1fr}
+  .flow .st{border-right:0;border-bottom:1px solid var(--line)}
+  .nav{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+h1,h2,h3{font-weight:800;letter-spacing:-.02em}
+.kpi .v,.big{font-weight:800}
+.chip.mcp{border-color:#1f4b5e;color:#7dd3fc}.chip.a2a{border-color:#6b3f72;color:#f0abfc}
+.lb[hidden]{display:none}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 4l10 3.8v6.9c0 6.2-4.2 11.5-10 13.6-5.8-2.1-10-7.4-10-13.6V7.8L16 4z" stroke="#2dd4bf" stroke-width="2.2" stroke-linejoin="round"/><path d="M11 16.5l3.4 3.4 6.8-7.3" stroke="#e8f3f1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      ClaimPilot
+    </div>
+    <nav class="nav" aria-label="Sections">
+      <a href="#usecase">Use case</a><a href="#walkthrough">Walkthrough</a><a href="#value">Value</a><a href="#trust">Governance</a><a href="#proof">Proof</a><a href="#architecture">Architecture</a><a href="#rollout">Rollout</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">AI claims desk · Google ADK · Executive demo</div>
+      <p class="byline" style="margin-top:10px;font-size:.9rem;color:var(--band-muted)">Written by <strong style="color:var(--band-ink)">Madhuri Patil</strong> · Senior AI Engineer</p>
+      <h1>Motor claims settled in minutes, <em>with an adjuster signing off every payout.</em></h1>
+      <p class="lead">ClaimPilot takes the customer's first call by chat or voice. It then reads the damage from photos, checks cover in the policy system and screens for fraud, all at the same time. It prices and audits the repair, and waits for a human adjuster. Only then does it pay, book a partner garage and send the letter.</p>
+      <div class="chips">
+        <span class="chip">Google ADK 2 Workflow</span><span class="chip">Gemini vision</span><span class="chip mcp">MCP policy server</span><span class="chip a2a">A2A partner agent</span><span class="chip">FastAPI · React</span>
+      </div>
+    </div>
+    <div class="record" aria-label="Demo claim record">
+      <div class="record-head">
+        <span class="mono" style="color:var(--band-muted);font-size:.78rem">CLM-2610 · AUTO-1001</span>
+        <span class="pill">● Settled</span>
+        <span class="mono" style="margin-left:auto;color:var(--band-muted);font-size:.76rem">demo run</span>
+      </div>
+      <div class="record-title">Rear-end collision at a signal · Priya Sharma</div>
+      <div class="record-alert" style="color:var(--band-accent)">2022 Honda City · Baner Road, Pune · 14 Oct 2026</div>
+      <ol class="tl">
+        <li><time>FNOL</time><i></i><span><b>Intake agent</b> takes the call, verifies policy AUTO-1001, collects 2 photos</span></li>
+        <li><time>parallel</time><i></i><span><b>Damage, coverage, fraud</b> agents run together: 5 damaged parts, collision cover, fraud score 0.00</span></li>
+        <li class="h"><time>loop</time><i></i><span><b>Critic</b> finds missing paint work; estimate revised ₹44,700 → ₹55,500</span></li>
+        <li class="h"><time>human</time><i></i><span><b>Adjuster approves</b> ₹50,500 (estimate less ₹5,000 deductible)</span></li>
+        <li class="g"><time>settle</time><i></i><span><b>Paid</b>, garage booked with the partner network over A2A, letter sent</span></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="kpis" role="list">
+    <div class="kpi" role="listitem"><div class="v">3<small>agents</small></div><div class="l">Assess every claim in parallel: vision, coverage, fraud</div><div class="s">ADK 2 WORKFLOW FAN-OUT</div></div>
+    <div class="kpi" role="listitem"><div class="v">4 / 4</div><div class="l">Demo claims routed and decided correctly</div><div class="s">28 / 28 EVAL CHECKS</div></div>
+    <div class="kpi" role="listitem"><div class="v">100<small>%</small></div><div class="l">Recycled photo caught in the fraud scenario</div><div class="s">PERCEPTUAL HASH MATCH</div></div>
+    <div class="kpi" role="listitem"><div class="v">0</div><div class="l">Payments released without adjuster approval</div><div class="s">HARD GUARDRAIL IN CODE</div></div>
+  </div>
+  <p class="note" style="margin-top:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><strong>About these numbers.</strong> Every screen here is from the working product in offline demo mode. A deterministic model stands in for Gemini, and the customers, policies, garages and car photos (drawn illustrations) are synthetic. Figures marked "demo" come from those runs. The value estimate further down uses inputs you control.</span></p>
+</div>
+
+<section class="block" id="usecase">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">01 · The business problem</div>
+      <h2>Claims are where customers decide whether to stay</h2>
+      <p class="lead">A motor claim is the moment an insurer proves its promise. Today that moment takes days: a call centre form, photos waiting in a queue, manual coverage checks, a desk estimate and back-and-forth with garages. Meanwhile, recycled photos and soft fraud get through.</p>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="tag">Cycle time</div><h3 style="margin-top:6px">Days for a simple claim</h3><p>Every hand-off adds a queue. The customer waits for news, and every call to ask costs the insurer money.</p></div>
+      <div class="card"><div class="tag">Leakage</div><h3 style="margin-top:6px">Inconsistent estimates</h3><p>Missed refinish, wrong labour rates or uncovered items get paid when there is no time for a second look.</p></div>
+      <div class="card"><div class="tag">Fraud</div><h3 style="margin-top:6px">Recycled photos and new policies</h3><p>Image reuse, losses right after the policy starts and frequent claimants are hard to spot by hand at volume.</p></div>
+    </div>
+
+    <div class="sec-head" style="margin-top:56px">
+      <div class="eyebrow">How ClaimPilot works</div>
+      <h2>Six steps, with the adjuster as the decision-maker</h2>
+      <p class="lead">Agents gather facts, price and draft. People approve money and decisions.</p>
+    </div>
+    <div class="flow">
+      <div class="st"><div class="n">1 · INTAKE</div><h3>First notice of loss</h3><p>Chat or voice; verifies the policy and collects photos.</p><span class="who">AI agent</span></div>
+      <div class="st"><div class="n">2 · ASSESS</div><h3>Three in parallel</h3><p>Damage vision, coverage via MCP, fraud forensics.</p><span class="who">3 AI agents</span></div>
+      <div class="st"><div class="n">3 · ROUTE</div><h3>Triage</h3><p>Estimate, deny with the policy clause, or refer to investigators.</p><span class="who">Router</span></div>
+      <div class="st"><div class="n">4 · PRICE</div><h3>Estimator ⇄ critic</h3><p>The critic audits the estimate and sends it back until it passes.</p><span class="who">2 AI agents</span></div>
+      <div class="st gate"><div class="n">5 · APPROVE</div><h3>Adjuster decides</h3><p>The workflow pauses. The adjuster approves, adjusts or rejects.</p><span class="who">Adjuster</span></div>
+      <div class="st"><div class="n">6 · SETTLE</div><h3>Pay, book, write</h3><p>Payment, garage booked over A2A, customer letter.</p><span class="who">AI agent + partner</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="walkthrough">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">02 · Product walkthrough</div>
+      <h2>Four claims, four different outcomes</h2>
+      <p class="lead">A clean collision claim end to end, then a recycled-photo fraud case and a coverage exclusion. Use the arrow keys or click a screen to enlarge it.</p>
+    </div>
+    <div class="walk">
+      <ol class="steps" id="steps" role="tablist" aria-label="Walkthrough steps"></ol>
+      <div class="stage" id="stage" role="tabpanel" aria-live="polite">
+        <div class="progress"><i id="prog"></i></div>
+        <button class="shot" id="shotBtn" aria-label="Enlarge screenshot"><img id="shot" alt="" width="1680" height="1050"></button>
+        <div class="stage-body">
+          <div class="stage-top"><h3 id="stTitle"></h3><div class="ctrl"><button class="btn" id="prev">← Back</button><button class="btn primary" id="next">Next →</button></div></div>
+          <div class="cols3">
+            <div><h4>What you see</h4><p id="stSee"></p></div>
+            <div><h4>What the agents did</h4><p id="stDid"></p></div>
+            <div class="biz"><h4>Why it matters</h4><p id="stWhy"></p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="value">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">03 · Business value</div>
+      <h2>Estimate the value for your claims book</h2>
+      <p class="lead">Move the sliders to match your volumes. The defaults are placeholders, not measured results. A pilot replaces them with your own numbers.</p>
+    </div>
+    <div class="roi">
+      <div class="roi-in" id="roiIn">
+        <div class="cur"><label for="cur">Currency</label><select id="cur"><option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></div>
+      </div>
+      <div class="roi-out">
+        <div class="fine mono" style="letter-spacing:.08em;text-transform:uppercase">Estimated annual value</div>
+        <div class="big" id="roiBig">–</div>
+        <div id="roiRows"></div>
+        <div class="bars" id="roiBars"></div>
+        <p class="fine">Handling value = claims × (hours today − hours with ClaimPilot) × hourly cost. Leakage value = claims × average paid × leakage rate × share recovered. Model cost per claim is subtracted; the demo claim used about 30 model calls.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="trust">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">04 · Governance and safety</div>
+      <h2>Built for regulated claims handling</h2>
+      <p class="lead">These controls are enforced in code and covered by automated tests, not by prompt wording.</p>
+    </div>
+    <div class="trust">
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/></svg>No payout without sign-off</h3><p>The workflow pauses before settlement. A guardrail blocks the payment tool unless an adjuster approved that exact amount.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6l-7-3Z" stroke="currentColor" stroke-width="1.7"/></svg>Personal data masked</h3><p>Phone numbers, e-mails, Aadhaar and PAN numbers are masked before any text reaches a model.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4h10v16H7z" stroke="currentColor" stroke-width="1.7"/><path d="M10 8h4M10 12h4M10 16h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Decisions cite the policy</h3><p>Coverage comes from the policy system through MCP. Denial letters quote the exact clause and explain appeal rights.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4 4 10-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Rules in code, not prompts</h3><p>Coverage rules, fraud scores and settlement maths are deterministic code. The AI reasons and explains, but does not invent numbers.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Full event trail</h3><p>Every agent step, tool call, partner call and adjuster decision is stored and can be replayed, alongside per-agent cost and latency.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Fair to customers</h3><p>A high fraud score means "investigate", not "deny". Those claims go to the investigations team with the evidence, and no automated rejection is made.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="proof">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">05 · Proof of execution</div>
+      <h2>Every route through the workflow, tested</h2>
+      <p class="lead">Each demo claim takes a different path. All of them pass in the automated test suite and the evaluation harness.</p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Claim</th><th>What the agents found</th><th>Route</th><th>Outcome</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><b>Rear-end collision</b></td><td>5 damaged parts; collision cover; critic added missing paint work in round 2</td><td><code>estimate</code></td><td>₹50,500 paid, garage booked over A2A</td><td><span class="ok">✓ settled</span></td></tr>
+          <tr><td><b>Hailstorm</b></td><td>Weather feed confirms hail on that date and area; dent repair priced per panel</td><td><code>estimate</code></td><td>₹77,725 paid</td><td><span class="ok">✓ settled</span></td></tr>
+          <tr><td><b>Front-end, new policy</b></td><td>Photo matches a 2025 claim (100% perceptual match); policy 6 days old; 2 prior claims</td><td><code>siu</code></td><td>Referred to investigators, no payment</td><td><span class="ok">✓ referred</span></td></tr>
+          <tr><td><b>Basement flood</b></td><td>Policy has no Comprehensive cover; exclusion 4.2(c) applies</td><td><code>decide</code></td><td>Denial letter citing the clause</td><td><span class="ok">✓ denied</span></td></tr>
+          <tr><td><b>Adjuster rejects</b></td><td>Recommendation overruled by the human</td><td>-</td><td>Escalated, no payment</td><td><span class="ok">✓ escalated</span></td></tr>
+          <tr><td><b>Adjuster edits payout</b></td><td>Adjuster lowers the amount before approving</td><td>-</td><td>Exactly the edited amount is paid</td><td><span class="ok">✓ settled</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card"><div class="tag">Quality</div><h3 style="margin-top:6px">18 automated tests</h3><p>End-to-end claims, reject and override paths, validation, payment guardrail, PII masking, MCP server and A2A agent card.</p></div>
+      <div class="card"><div class="tag">Evaluation</div><h3 style="margin-top:6px">28 / 28 eval checks</h3><p>Routing, decision, payout, final status, safety and fraud findings scored against a golden set; the same harness runs against real Gemini.</p></div>
+      <div class="card"><div class="tag">Interoperability</div><h3 style="margin-top:6px">MCP + A2A verified</h3><p>The policy server runs over MCP stdio; the garage partner runs as a separate process and is called over the A2A protocol.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="architecture">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">06 · Architecture</div>
+      <h2>Agents, systems and partners, each behind a standard interface</h2>
+      <p class="lead">Policy data comes through MCP and partner garages through A2A. That means real core systems and partners can be connected without changing the agent workflow.</p>
+    </div>
+    <div class="arch">
+      <div class="layer"><div class="tag">Experience</div><h3>Claims desk</h3><ul><li>React 19 + TypeScript, live over server-sent events</li><li>Chat with voice input and read-aloud</li><li>Live workflow graph, damage boxes, fraud evidence</li><li>Adjuster approval panel and letters</li></ul></div>
+      <div class="layer"><div class="tag">Orchestration</div><h3>Google ADK 2 Workflow</h3><ul><li>Parallel fan-out, join, routing and a critic loop</li><li>Pause-and-resume for the adjuster</li><li>Sessions stored in a database</li><li>Gemini via AI Studio or Vertex AI</li></ul></div>
+      <div class="layer"><div class="tag">Systems</div><h3>Tools and partners</h3><ul><li>Policy administration as an MCP server</li><li>Garage network as an A2A partner agent</li><li>Guardrail and telemetry plugins</li><li>Deterministic rules for money and coverage</li></ul></div>
+    </div>
+    <p class="fine" style="margin-top:18px">Integration path. Green is built; the rest are adapters behind the same interfaces.</p>
+    <div class="integr">
+      <span class="built">Policy admin (MCP)</span><span class="built">Garage network (A2A)</span><span class="built">Weather feed</span><span class="built">Prior-claims image library</span>
+      <span>Guidewire / Duck Creek</span><span>Payment rails (NEFT/UPI)</span><span>Telematics</span><span>WhatsApp / IVR channel</span><span>Vertex AI Agent Engine</span>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="rollout">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">07 · Rollout plan</div>
+      <h2>Prove it on simple motor claims in 90 days</h2>
+      <p class="lead">Start where claims are frequent and low-risk, compare against today's adjusters, then widen the scope.</p>
+    </div>
+    <div class="phases">
+      <div class="phase-c on"><div class="when">Days 0–30</div><h3>Shadow mode</h3><ul><li>Run on closed motor claims and live claims in parallel</li><li>Compare damage, coverage, estimate and fraud calls with adjusters</li><li>No customer-facing actions</li></ul><div class="exit"><b>Exit criteria</b>Agreement with adjuster decisions on most claims; no unsafe recommendations</div></div>
+      <div class="phase-c"><div class="when">Days 31–60</div><h3>Assisted settlement</h3><ul><li>Live intake and assessment for one region</li><li>Every payout approved by an adjuster</li><li>One partner garage network over A2A</li></ul><div class="exit"><b>Exit criteria</b>Measured drop in cycle time and handling hours</div></div>
+      <div class="phase-c"><div class="when">Days 61–90</div><h3>Scale</h3><ul><li>More regions and perils</li><li>Connect core policy and payment systems</li><li>Monthly review of accuracy, leakage and fairness</li></ul><div class="exit"><b>Track</b>Cycle time, handling hours per claim, leakage, fraud referrals, NPS</div></div>
+    </div>
+
+    <div class="sec-head" style="margin-top:56px">
+      <div class="eyebrow">Risks we plan for</div>
+      <h2>What could go wrong, and the control for each</h2>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Risk</th><th>Control</th></tr></thead>
+        <tbody>
+          <tr><td>Wrong damage reading from photos</td><td>Damage regions are shown on the photo for the adjuster; estimates are audited by a critic agent before any decision</td></tr>
+          <tr><td>Payment errors</td><td>Payments only after adjuster approval of the exact amount, enforced by a guardrail in code</td></tr>
+          <tr><td>Unfair treatment of customers</td><td>High fraud scores go to human investigators with evidence; no automated denial for suspected fraud</td></tr>
+          <tr><td>Personal data exposure</td><td>PII masked before model calls; private Vertex AI endpoints in your GCP project</td></tr>
+          <tr><td>Partner or system outages</td><td>Partner and policy calls go through standard MCP and A2A interfaces with failures surfaced to the adjuster</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <h3>ClaimPilot · AI claims desk</h3>
+      <p>Written, designed and built by Madhuri Patil, Senior AI Engineer. Multi-agent system on Google ADK 2 with MCP, A2A, FastAPI and React.</p>
+      <p style="margin-top:10px">Companion projects: Sentinel (AI incident commander) and Atlas (multi-agent research analyst).</p>
+    </div>
+    <div>
+      <h3>Run the demo locally</h3>
+<pre>cd backend && uv sync
+uv run uvicorn app.main:app      # offline, no keys
+cd ../frontend && npm i && npm run dev
+# real Gemini: CLAIMPILOT_MODEL + GOOGLE_API_KEY or Vertex AI</pre>
+    </div>
+  </div>
+</footer>
+
+<div class="lb" id="lb" hidden><img id="lbImg" alt=""></div>
+
+<script>
+const STEPS = [
+  {img:"shots/1-home.webp", t:"Choose a claim", phase:"Start",
+   see:"The claims desk with four demo claims, each showing a different outcome: a clean claim, weather verification, fraud signals and a coverage exclusion.",
+   did:"Nothing yet. In production this screen is replaced by an incoming call, a WhatsApp message or an app notification.",
+   why:"One desk handles the whole range of motor claims, from the simple ones to the suspicious ones."},
+  {img:"shots/2-intake.webp", t:"The first call", phase:"Intake",
+   see:"A conversation with the intake agent, by chat or voice. It asks one question at a time and confirms the policy and vehicle by name.",
+   did:"The intake agent extracted the date, time, location, cause and other party, checked policy AUTO-1001, and asked for photos before registering the claim.",
+   why:"The customer is looked after from the first minute, and the claim arrives complete. No call-centre form or call-back is needed."},
+  {img:"shots/3-parallel.webp", t:"Three agents assess at once", phase:"Assess",
+   see:"The live workflow graph. Damage, Coverage and Fraud run side by side, and coverage is already confirmed with limit and deductible.",
+   did:"The damage agent read the photos, the coverage agent queried the policy system through MCP, and the fraud agent checked photos, history and weather, all in parallel.",
+   why:"Work that waits in three queues today happens at the same time, so the assessment takes seconds instead of days."},
+  {img:"shots/4-damage.webp", t:"Damage marked, estimate audited", phase:"Price",
+   see:"Numbered damage regions on the photo, each with severity and repair action. Beside it, the estimate with three lines marked 'added by critic'.",
+   did:"The estimator priced parts and labour. The critic agent found that painted panels had no refinish or blend, so the estimate went back for a second round: ₹44,700 → ₹55,500.",
+   why:"A built-in second review catches under- and over-payment before a human sees the claim, which reduces leakage."},
+  {img:"shots/5-adjuster.webp", t:"The adjuster decides", phase:"Approve",
+   see:"The recommendation (approve ₹50,500, estimate less deductible) with an editable amount, a note field, and Approve or Reject buttons. The workflow shows it is paused.",
+   did:"The decision agent computed the payout and explained it. The workflow then stopped itself and is waiting for a person.",
+   why:"Authority over money and decisions stays with licensed staff. AI prepares the decision but does not make it."},
+  {img:"shots/6-settlement.webp", t:"Paid, booked and confirmed", phase:"Settle",
+   see:"Payment released, a repair slot booked at a 4.8-rated partner garage, and the settlement letter to the customer.",
+   did:"The settlement agent paid exactly the approved amount, asked the garage network's own agent over A2A to book a slot, and wrote the letter.",
+   why:"The customer gets money, a garage and a clear explanation in one go. Partners plug in through an open protocol."},
+  {img:"shots/7-fraud.webp", t:"A recycled photo is caught", phase:"Fraud",
+   see:"Fraud score 0.86 with its signals. The claim photo sits side by side with an identical photo from a 2025 claim by a different customer.",
+   did:"The fraud agent matched the photo by perceptual hash, found the policy was 6 days old and the claimant had prior claims. Triage sent it straight to investigators, with no estimate and no payment.",
+   why:"Fraud is stopped before money moves, and the investigator gets the evidence rather than a bare flag."},
+  {img:"shots/8-denial.webp", t:"A clear, fair denial", phase:"Coverage",
+   see:"A flood claim on a policy without Comprehensive cover. The coverage panel shows 'Not covered', and the decision letter cites clause 4.2(c) and explains appeal rights.",
+   did:"The coverage agent read the exclusion from the policy system. The workflow skipped the estimate, and after the adjuster confirmed, the settlement agent sent the denial letter.",
+   why:"Customers get a fast, consistent and explainable answer, which reduces complaints and regulator escalations."}
+];
+const $ = (id) => document.getElementById(id);
+let cur = 0;
+const list = $("steps");
+STEPS.forEach((s, i) => {
+  const li = document.createElement("li");
+  li.innerHTML = `<button role="tab" id="tab${i}" aria-selected="false"><span class="k">${String(i+1).padStart(2,"0")}</span><span><span class="t">${s.t}</span><span class="phase">${s.phase}</span></span></button>`;
+  li.firstChild.addEventListener("click", () => show(i));
+  list.appendChild(li);
+});
+function show(i){
+  cur = Math.max(0, Math.min(STEPS.length - 1, i));
+  const s = STEPS[cur];
+  $("shot").src = s.img; $("shot").alt = s.t;
+  $("stTitle").textContent = `${cur+1}. ${s.t}`;
+  $("stSee").textContent = s.see; $("stDid").textContent = s.did; $("stWhy").textContent = s.why;
+  $("prog").style.width = `${((cur+1)/STEPS.length)*100}%`;
+  $("prev").disabled = cur === 0;
+  $("next").textContent = cur === STEPS.length - 1 ? "Start over ↺" : "Next →";
+  list.querySelectorAll("button").forEach((b, j) => b.setAttribute("aria-selected", j === cur ? "true" : "false"));
+  const tab = $("tab"+cur); if (tab && window.matchMedia("(max-width:980px)").matches) tab.scrollIntoView({block:"nearest", inline:"nearest"});
+}
+$("prev").onclick = () => show(cur - 1);
+$("next").onclick = () => show(cur === STEPS.length - 1 ? 0 : cur + 1);
+document.addEventListener("keydown", (e) => {
+  if (!$("lb").hidden) { if (e.key === "Escape") $("lb").hidden = true; return; }
+  if (e.target.closest && e.target.closest("input,select")) return;
+  const r = $("walkthrough").getBoundingClientRect();
+  if (r.top > window.innerHeight || r.bottom < 0) return;
+  if (e.key === "ArrowRight") show(cur + 1);
+  if (e.key === "ArrowLeft") show(cur - 1);
+});
+$("shotBtn").onclick = () => { $("lbImg").src = STEPS[cur].img; $("lbImg").alt = STEPS[cur].t; $("lb").hidden = false; };
+$("lb").onclick = () => { $("lb").hidden = true; };
+STEPS.forEach(s => { const im = new Image(); im.src = s.img; });
+show(0);
+
+/* ROI - base currency INR */
+const RATES = {INR:1, USD:1/83, EUR:0.92/83, GBP:0.79/83};
+const INPUTS = [
+  {id:"claims", label:"Motor claims per month", min:100, max:50000, step:100, v:3000, fmt:v=>v.toLocaleString("en-IN")},
+  {id:"hNow", label:"Handling hours per claim today", min:0.5, max:12, step:0.5, v:3, fmt:v=>v+" h"},
+  {id:"hNew", label:"Handling hours with ClaimPilot", min:0.25, max:6, step:0.25, v:0.75, fmt:v=>v+" h", hint:"Adjuster review and exceptions. Assumption to validate in shadow mode."},
+  {id:"rate", label:"Loaded handler cost per hour", min:200, max:5000, step:50, v:900, money:true},
+  {id:"paid", label:"Average paid per claim", min:5000, max:500000, step:5000, v:60000, money:true},
+  {id:"leak", label:"Leakage today (overpayment + soft fraud)", min:0, max:15, step:0.5, v:6, fmt:v=>v+"%", hint:"Share of paid amount lost to errors and fraud."},
+  {id:"rec", label:"Share of leakage recovered", min:0, max:60, step:5, v:20, fmt:v=>v+"%"},
+  {id:"run", label:"Model cost per claim", min:0, max:200, step:5, v:15, money:true}
+];
+const roiIn = $("roiIn");
+INPUTS.forEach(f => {
+  const d = document.createElement("div"); d.className = "field";
+  d.innerHTML = `<label for="${f.id}"><span>${f.label}</span><output id="${f.id}o"></output></label><input type="range" id="${f.id}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.v}">${f.hint?`<span class="hint">${f.hint}</span>`:""}`;
+  roiIn.appendChild(d);
+  d.querySelector("input").addEventListener("input", calc);
+});
+$("cur").addEventListener("change", calc);
+function money(v, c){ return new Intl.NumberFormat(c==="INR"?"en-IN":"en-US",{style:"currency",currency:c,maximumFractionDigits:0,notation: Math.abs(v)>=1e7 && c!=="INR"?"compact":"standard"}).format(v); }
+function calc(){
+  const c = $("cur").value, r = RATES[c];
+  const g = id => +$(id).value;
+  INPUTS.forEach(f => { $(f.id+"o").textContent = f.money ? money(g(f.id)*r, c) : f.fmt(g(f.id)); });
+  const n = g("claims")*12, now = g("hNow"), nw = Math.min(g("hNew"), now);
+  const hrs = n*(now-nw), handling = hrs*g("rate")*r;
+  const leak = n*g("paid")*g("leak")/100*g("rec")/100*r;
+  const run = n*g("run")*r;
+  $("roiBig").textContent = money(handling + leak - run, c);
+  $("roiRows").innerHTML = [
+    ["Handling time released", money(handling, c)],
+    ["Leakage recovered", money(leak, c)],
+    ["Model cost", "− " + money(run, c)],
+    ["Handler hours back per year", Math.round(hrs).toLocaleString("en-IN")]
+  ].map(([a,b]) => `<div class="out-row"><span>${a}</span><span>${b}</span></div>`).join("");
+  $("roiBars").innerHTML = `<div class="bar"><span>Today</span><div class="tr"><i style="width:100%"></i></div><b>${now} h</b></div><div class="bar after"><span>ClaimPilot</span><div class="tr"><i style="width:${(nw/now)*100}%"></i></div><b>${nw} h</b></div>`;
+}
+calc();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="author" content="Madhuri Patil"><meta name="description" content="An agentic AI scam shield on WhatsApp: forward a suspicious message, voice note or screenshot and get a verdict in Marathi, Hindi or English. Built by Madhuri Patil with Google ADK, MCP and Gemini.">
+<meta property="og:type" content="website"><meta property="og:title" content="KavachAI · Scam shield on WhatsApp"><meta property="og:description" content="An agentic AI scam shield on WhatsApp: forward a suspicious message, voice note or screenshot and get a verdict in Marathi, Hindi or English. Built by Madhuri Patil with Google ADK, MCP and Gemini."><meta property="og:url" content="https://madhurids012-jpg.github.io/kavachai/"><meta property="og:image" content="https://madhurids012-jpg.github.io/kavachai/og.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://madhurids012-jpg.github.io/kavachai/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+<title>KavachAI Scam Shield</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;600&display=swap">
+<style>
+/* Layout: a dark "case file" hero with the live case timeline, then a calm executive brief keyed to the shield workflow. */
+:root{
+  --bg:#f7f6f4; --surface:#ffffff; --surface-2:#f1eeea; --line:#e2ddd6; --ink:#16130f; --ink-2:#463f37; --muted:#776e64;
+  --accent:#c2410c; --accent-soft:#fdeadf; --accent-ink:#ffffff;
+  --good:#0f7a5a; --good-soft:#dff3ea; --bad:#c2312b; --bad-soft:#fbe4e2; --info:#4f46e5; --info-soft:#e7e7fb;
+  --band:#05070d; --band-2:#0e1320; --band-line:#1d2638; --band-ink:#eef2fb; --band-muted:#8b95ad; --band-accent:#ff8a3d;
+  --display:"Manrope", "Noto Sans Devanagari", "Segoe UI", system-ui, sans-serif;
+  --body:"Manrope", "Noto Sans Devanagari", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#07090f; --surface:#0f1420; --surface-2:#141b2a; --line:#222c40; --ink:#eef2fb; --ink-2:#bcc5d8; --muted:#8792aa;
+  --accent:#ff8a3d; --accent-soft:#2e1a0f; --accent-ink:#1d0d02;
+  --good:#3ccf97; --good-soft:#0f2e24; --bad:#ff6b63; --bad-soft:#3a1716; --info:#a5b4fc; --info-soft:#1c1f45;
+  --band:#04050a; --band-2:#0c1120; --band-line:#1b2335; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#07090f; --surface:#0f1420; --surface-2:#141b2a; --line:#222c40; --ink:#eef2fb; --ink-2:#bcc5d8; --muted:#8792aa;
+  --accent:#ff8a3d; --accent-soft:#2e1a0f; --accent-ink:#1d0d02;
+  --good:#3ccf97; --good-soft:#0f2e24; --bad:#ff6b63; --bad-soft:#3a1716; --info:#a5b4fc; --info-soft:#1c1f45;
+  --band:#04050a; --band-2:#0c1120; --band-line:#1b2335; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h2{font-size:clamp(1.6rem,1.2rem + 1.6vw,2.3rem);line-height:1.15;font-weight:700}
+h3{font-size:1.12rem;font-weight:700;line-height:1.3}
+p{margin:0}
+a{color:inherit}
+.mono{font-family:var(--mono)}
+.eyebrow{font:500 .74rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:1.08rem;color:var(--ink-2);max-width:62ch}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--band) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--band-line);color:var(--band-ink)}
+.top .wrap{display:flex;align-items:center;gap:20px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;font:700 1.02rem var(--display);white-space:nowrap}
+.brand svg{flex:none}
+.nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto}
+.nav a{color:var(--band-muted);text-decoration:none;font-size:.86rem;padding:6px 10px;border-radius:6px;white-space:nowrap}
+.nav a:hover{color:var(--band-ink);background:var(--band-2)}
+
+/* hero band */
+.hero{background:var(--band);color:var(--band-ink);border-bottom:1px solid var(--band-line)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;padding-block:56px 48px;align-items:center}
+.hero h1{font-size:clamp(2rem,1.4rem + 2.8vw,3.4rem);line-height:1.05;font-weight:700;margin:14px 0 18px}
+.hero h1 em{font-style:normal;color:var(--band-accent)}
+.hero .lead{color:#b6c1d2}
+.hero .eyebrow{color:var(--band-accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.chip{font:500 .76rem var(--mono);padding:5px 10px;border-radius:999px;border:1px solid var(--band-line);color:#c8d1df;background:var(--band-2)}
+.record{background:var(--band-2);border:1px solid var(--band-line);border-radius:14px;overflow:hidden;font-size:.9rem}
+.record-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--band-line)}
+.sev{font:600 .72rem var(--mono);padding:3px 8px;border-radius:5px;background:#c2312b;color:#fff}
+.pill{font:500 .72rem var(--mono);padding:3px 9px;border-radius:999px;border:1px solid #1e6b52;color:#4fe0a8;background:#0c2a20}
+.record-title{padding:12px 16px 4px;font:600 1rem var(--body)}
+.record-alert{padding:0 16px 12px;color:#ff8a83;font:400 .82rem var(--mono)}
+.tl{list-style:none;margin:0;padding:6px 16px 16px;display:grid;gap:9px}
+.tl li{display:grid;grid-template-columns:62px 12px minmax(0,1fr);gap:8px;align-items:start}
+.tl time{font:400 .76rem var(--mono);color:var(--band-muted);padding-top:2px}
+.tl i{width:8px;height:8px;border-radius:50%;margin-top:7px;background:#7aa2ff}
+.tl .h i{background:var(--band-accent)} .tl .g i{background:#3ccf97} .tl .p i{background:#ff6b63}
+.tl span{color:#d5dce8}
+.tl b{font-weight:600;color:#fff}
+
+/* demo note */
+.note{display:flex;gap:10px;align-items:flex-start;font-size:.86rem;color:var(--muted);padding:14px 16px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}
+.note strong{color:var(--ink-2)}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-top:-28px;position:relative;overflow:hidden}
+.kpi{padding:20px 22px;border-right:1px solid var(--line)}
+.kpi:last-child{border-right:0}
+.kpi .v{font:700 2rem/1.1 var(--display);font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:.95rem;color:var(--muted);font-weight:500;margin-left:3px}
+.kpi .l{font-size:.86rem;color:var(--ink-2);margin-top:6px}
+.kpi .s{font:400 .72rem var(--mono);color:var(--muted);margin-top:6px;letter-spacing:.02em}
+
+section.block{padding-block:72px 8px}
+.sec-head{display:grid;gap:12px;margin-bottom:32px;max-width:760px}
+
+/* problem / jobs */
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.card p{color:var(--ink-2);font-size:.95rem;margin-top:8px}
+.card .tag{font:500 .72rem var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.flow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.flow .st{padding:18px 16px;border-right:1px solid var(--line);position:relative;min-width:0}
+.flow .st:last-child{border-right:0}
+.flow .st .n{font:500 .72rem var(--mono);color:var(--muted)}
+.flow .st h3{font-size:1rem;margin:6px 0 6px}
+.flow .st p{font-size:.86rem;color:var(--ink-2)}
+.flow .st.gate{background:var(--accent-soft)}
+.flow .st.gate .n{color:var(--accent);font-weight:600}
+.flow .who{display:inline-block;margin-top:10px;font:500 .7rem var(--mono);padding:2px 7px;border-radius:4px;background:var(--surface-2);color:var(--ink-2)}
+.flow .gate .who{background:var(--accent);color:var(--accent-ink)}
+
+/* walkthrough */
+.walk{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;align-items:start}
+.walk>*{min-width:0}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:4px;position:sticky;top:76px}
+.steps button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;width:100%;padding:10px 12px;border-radius:8px;cursor:pointer;color:var(--ink-2);border:1px solid transparent}
+.steps button:hover{background:var(--surface)}
+.steps button[aria-selected="true"]{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.steps .k{font:500 .78rem var(--mono);color:var(--muted);padding-top:2px}
+.steps button[aria-selected="true"] .k{color:var(--accent);font-weight:600}
+.steps .t{font-weight:600;font-size:.93rem;line-height:1.35}
+.steps .phase{display:block;font:400 .72rem var(--mono);color:var(--muted);margin-top:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.shot{display:block;width:100%;background:var(--band);border:0;padding:0;cursor:zoom-in;border-bottom:1px solid var(--line)}
+.shot img{display:block;width:100%;height:auto;max-height:620px;object-fit:contain;margin:0 auto}
+.stage-body{padding:22px 24px 24px;display:grid;gap:18px}
+.stage-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.stage-top h3{font-size:1.3rem}
+.ctrl{display:flex;gap:8px}
+.btn{font:500 .86rem var(--body);padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.cols3 h4{margin:0 0 6px;font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cols3 p{font-size:.93rem;color:var(--ink-2)}
+.cols3 .biz h4{color:var(--accent)}
+.progress{height:3px;background:var(--surface-2)}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+
+/* ROI */
+.roi{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.roi-in{padding:24px;display:grid;gap:16px;border-right:1px solid var(--line)}
+.field{display:grid;gap:6px}
+.field label{display:flex;justify-content:space-between;gap:12px;font-size:.88rem;color:var(--ink-2)}
+.field output{font:500 .88rem var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.field input[type=range]{width:100%;accent-color:var(--accent)}
+.field .hint{font-size:.76rem;color:var(--muted)}
+.cur{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--muted)}
+.cur select{font:inherit;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.roi-out{padding:24px;display:grid;gap:14px;align-content:start;background:var(--surface-2)}
+.big{font:700 clamp(2rem,1.5rem + 2vw,2.8rem)/1 var(--display);font-variant-numeric:tabular-nums;color:var(--good)}
+.out-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.out-row span:last-child{font:500 .95rem var(--mono);font-variant-numeric:tabular-nums}
+.bars{display:grid;gap:8px;margin-top:4px}
+.bar{display:grid;grid-template-columns:90px minmax(0,1fr) 70px;gap:10px;align-items:center;font-size:.82rem;color:var(--ink-2)}
+.bar .tr{height:12px;background:var(--surface);border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.bar .tr i{display:block;height:100%;background:var(--muted);transition:width .3s}
+.bar.after .tr i{background:var(--good)}
+.bar b{font:500 .8rem var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.fine{font-size:.78rem;color:var(--muted)}
+
+/* trust */
+.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.trust>div{background:var(--surface);padding:22px}
+.trust h3{font-size:1rem;display:flex;gap:10px;align-items:center}
+.trust h3 svg{flex:none;color:var(--accent)}
+.trust p{font-size:.9rem;color:var(--ink-2);margin-top:8px}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:720px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td .ok{display:inline-flex;align-items:center;gap:6px;font:500 .78rem var(--mono);color:var(--good);background:var(--good-soft);padding:2px 8px;border-radius:999px;white-space:nowrap}
+td code{font:400 .82rem var(--mono);background:var(--surface-2);padding:1px 6px;border-radius:4px}
+
+/* architecture */
+.arch{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:16px}
+.layer{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:18px}
+.layer .tag{font:500 .7rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.layer h3{margin:4px 0 10px}
+.layer ul{margin:0;padding:0;list-style:none;display:grid;gap:7px;font-size:.88rem;color:var(--ink-2)}
+.layer li{display:flex;gap:8px}
+.layer li::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--accent);margin-top:8px;flex:none}
+.integr{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.integr span{font:500 .78rem var(--mono);padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink-2)}
+.integr span.built{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+/* rollout */
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;counter-reset:ph}
+.phase-c{border-top:3px solid var(--line);padding-top:16px}
+.phase-c.on{border-top-color:var(--accent)}
+.phase-c .when{font:500 .76rem var(--mono);color:var(--muted)}
+.phase-c h3{margin:4px 0 10px}
+.phase-c ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:.92rem;display:grid;gap:6px}
+.phase-c .exit{margin-top:12px;font-size:.84rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.phase-c .exit b{font:500 .7rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:3px}
+
+footer{margin-top:80px;background:var(--band);color:var(--band-muted);border-top:1px solid var(--band-line)}
+footer .wrap{padding-block:36px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;font-size:.88rem}
+footer .wrap>*{min-width:0}
+footer h3{color:var(--band-ink);font-size:1rem;margin-bottom:8px}
+footer pre{margin:0;background:var(--band-2);border:1px solid var(--band-line);border-radius:8px;padding:14px;overflow-x:auto;font:400 .8rem/1.7 var(--mono);color:#c9d3e2}
+
+/* lightbox */
+.lb{position:fixed;inset:0;z-index:50;background:rgba(5,8,13,.88);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
+.lb img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+@media (max-width:980px){
+  .hero .wrap{grid-template-columns:1fr;gap:32px}
+  .walk{grid-template-columns:1fr}
+  .steps{position:static;grid-auto-flow:column;grid-auto-columns:minmax(200px,1fr);overflow-x:auto;padding-bottom:6px}
+  .flow{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .flow .st:nth-child(3){border-right:0}
+  .flow .st:nth-child(-n+3){border-bottom:1px solid var(--line)}
+  .trust,.arch,.grid3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:680px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(2){border-right:0}
+  .kpi:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .grid3,.grid2,.trust,.arch,.phases,.cols3,.roi,footer .wrap{grid-template-columns:1fr}
+  .roi-in{border-right:0;border-bottom:1px solid var(--line)}
+  .flow{grid-template-columns:1fr}
+  .flow .st{border-right:0;border-bottom:1px solid var(--line)}
+  .nav{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+h1,h2,h3{font-weight:800;letter-spacing:-.02em}
+.kpi .v,.big{font-weight:800}
+.chip.mcp{border-color:#1f4b5e;color:#7dd3fc}.chip.wa{border-color:#1d5c3a;color:#4ade80}
+.hero h1 em{background:linear-gradient(90deg,#ff8a3d,#ff4f81);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sev{background:#e11d48}
+.dev{font-family:"Noto Sans Devanagari",var(--body)}
+.lb[hidden]{display:none}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 64 64" fill="none" aria-hidden="true"><defs><linearGradient id="kg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a3d"/><stop offset="1" stop-color="#ff4f81"/></linearGradient></defs><path d="M32 4 8 13v17c0 15 10 26 24 30 14-4 24-15 24-30V13L32 4z" fill="url(#kg)"/><path d="m21 32 8 8 15-16" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      KavachAI
+    </div>
+    <nav class="nav" aria-label="Sections">
+      <a href="#usecase">Use case</a><a href="#walkthrough">Walkthrough</a><a href="#value">Impact</a><a href="#trust">Safety</a><a href="#proof">Proof</a><a href="#architecture">Architecture</a><a href="#rollout">Rollout</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Scam shield on WhatsApp · Google ADK · Executive demo</div>
+      <p class="byline" style="margin-top:10px;font-size:.9rem;color:var(--band-muted)">Written by <strong style="color:var(--band-ink)">Madhuri Patil</strong> · Senior AI Engineer</p>
+      <h1>Forward a suspicious message. <em>Get a verdict and a plan in seconds, in your language.</em></h1>
+      <p class="lead">KavachAI reads what people forward: text, screenshots, links and voice notes. It explains whether it is a scam and what to do next, in Marathi, Hindi or English. Seven agents investigate in parallel, a deterministic risk engine scores the evidence, and guardrails make sure it only ever recommends verified helplines. With the user's consent, each report feeds Scam Radar, a live early-warning map of new scam campaigns.</p>
+      <div class="chips">
+        <span class="chip">Google ADK 2 Workflow</span><span class="chip">Gemini OCR + speech</span><span class="chip mcp">MCP threat intel</span><span class="chip wa">WhatsApp Cloud API</span><span class="chip">FastAPI · React</span>
+      </div>
+    </div>
+    <div class="record" aria-label="Demo case record">
+      <div class="record-head">
+        <span class="sev">SCAM · 98%</span>
+        <span class="mono" style="color:var(--band-muted);font-size:.78rem">Digital arrest · voice note</span>
+        <span class="mono" style="margin-left:auto;color:var(--band-muted);font-size:.76rem">demo run</span>
+      </div>
+      <div class="record-title">"CBI officer" call · the user has already sent ₹50,000</div>
+      <div class="record-alert dev" style="color:var(--band-accent)">User's note: "मी घाबरून आत्ताच ५०,००० रुपये पाठवले. काय करू?"</div>
+      <ol class="tl">
+        <li><time>perceive</time><i></i><span><b>Perception agent</b> transcribes the 31-second Hindi voice note</span></li>
+        <li><time>parallel</time><i></i><span><b>Linguist, forensics, threat intel</b> run together: fake CBI, threats, secrecy, payment demand; sender reported 21×; known script match</span></li>
+        <li class="p"><time>score</time><i></i><span><b>Risk engine</b>: 9 signals, scam with 98% risk; money already sent, so the <b>golden-hour</b> route</span></li>
+        <li class="h"><time>reply</time><i></i><span><b>Reply in Marathi</b>: call 1930 now, block the transaction, complaint for cybercrime.gov.in pre-filled</span></li>
+        <li class="g"><time>consent</time><i></i><span><b>The user chooses</b> to share anonymously; the report joins the Scam Radar campaign</span></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="kpis" role="list">
+    <div class="kpi" role="listitem"><div class="v">7<small>agents</small></div><div class="l">Perception, 3 parallel specialists, advisor, responder, radar</div><div class="s">ADK 2 WORKFLOW GRAPH</div></div>
+    <div class="kpi" role="listitem"><div class="v">3</div><div class="l">Reply languages: Marathi, Hindi, English; Hinglish understood</div><div class="s">AUTO-DETECTED PER USER</div></div>
+    <div class="kpi" role="listitem"><div class="v">37 / 37</div><div class="l">Scams flagged, 0 of 19 genuine messages wrongly flagged</div><div class="s">GOLDEN SET · OFFLINE MODEL</div></div>
+    <div class="kpi" role="listitem"><div class="v">0</div><div class="l">Unverified phone numbers or links sent to users</div><div class="s">CONTACT GUARDRAIL IN CODE</div></div>
+  </div>
+  <p class="note" style="margin-top:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><strong>About these numbers.</strong> Every screen here comes from the working product in offline demo mode, where a deterministic model stands in for Gemini. The messages, numbers, links and Scam Radar reports are fictitious or synthetic. The golden set is small (56 messages) and was written by the author, so treat accuracy figures as a demo, not a field result. The impact estimate below uses inputs you control.</span></p>
+</div>
+
+<section class="block" id="usecase">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">01 · The problem</div>
+      <h2>Scammers don't hack phones. They hack panic.</h2>
+      <p class="lead">Fake police on video calls, fake traffic challans with malicious apps, "enter your PIN to receive money", "Papa, this is my new number". The scripts change every week and reach people in their own language. The person receiving them is alone, frightened and has seconds to decide.</p>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="tag">Speed</div><h3 style="margin-top:6px">Decisions made in panic</h3><p>Scripts are designed to stop people from checking with anyone. A trusted second opinion has to arrive within seconds, on the app people already use.</p></div>
+      <div class="card"><div class="tag">Language</div><h3 style="margin-top:6px">Warnings in the wrong language</h3><p>Advisories are mostly in English, while many scams arrive in Marathi, Hindi or Hinglish, often as voice notes or screenshots.</p></div>
+      <div class="card"><div class="tag">Mutation</div><h3 style="margin-top:6px">New campaigns spread before anyone notices</h3><p>A new script, such as fake e-challan apps, can spread across cities long before it is widely known. Single reports are rarely connected.</p></div>
+    </div>
+
+    <div class="sec-head" style="margin-top:56px">
+      <div class="eyebrow">How KavachAI works</div>
+      <h2>Six steps, with the user in control of their data</h2>
+      <p class="lead">Agents gather and explain the evidence. A deterministic engine scores it. The user decides what is shared.</p>
+    </div>
+    <div class="flow">
+      <div class="st"><div class="n">1 · PERCEIVE</div><h3>Read anything</h3><p>Text, screenshot OCR or voice transcription with Gemini.</p><span class="who">AI agent</span></div>
+      <div class="st"><div class="n">2 · INVESTIGATE</div><h3>Three in parallel</h3><p>Manipulation tactics, link and UPI forensics, threat intel over MCP.</p><span class="who">3 AI agents</span></div>
+      <div class="st"><div class="n">3 · SCORE</div><h3>Risk engine</h3><p>Explainable score from weighted evidence; routes to advise or reassure.</p><span class="who">Deterministic</span></div>
+      <div class="st"><div class="n">4 · ADVISE</div><h3>Safety plan</h3><p>Golden-hour steps if money was sent, plus a pre-filled complaint.</p><span class="who">AI agent</span></div>
+      <div class="st"><div class="n">5 · REPLY</div><h3>In your language</h3><p>Marathi, Hindi or English, checked by the contact guardrail.</p><span class="who">AI agent + guard</span></div>
+      <div class="st gate"><div class="n">6 · CONSENT</div><h3>User decides</h3><p>The workflow pauses; an anonymised report goes to Scam Radar only on "yes".</p><span class="who">User</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="walkthrough">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">02 · Product walkthrough</div>
+      <h2>A frightening call, a malicious app and a genuine OTP</h2>
+      <p class="lead">A digital-arrest voice note from someone who has already paid, then a fake e-challan screenshot, the consent step, a genuine bank SMS and the Scam Radar dashboard. Use the arrow keys or click a screen to enlarge it.</p>
+    </div>
+    <div class="walk">
+      <ol class="steps" id="steps" role="tablist" aria-label="Walkthrough steps"></ol>
+      <div class="stage" id="stage" role="tabpanel" aria-live="polite">
+        <div class="progress"><i id="prog"></i></div>
+        <button class="shot" id="shotBtn" aria-label="Enlarge screenshot"><img id="shot" alt="" width="1600" height="1000"></button>
+        <div class="stage-body">
+          <div class="stage-top"><h3 id="stTitle"></h3><div class="ctrl"><button class="btn" id="prev">← Back</button><button class="btn primary" id="next">Next →</button></div></div>
+          <div class="cols3">
+            <div><h4>What you see</h4><p id="stSee"></p></div>
+            <div><h4>What the agents did</h4><p id="stDid"></p></div>
+            <div class="biz"><h4>Why it matters</h4><p id="stWhy"></p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="value">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">03 · Impact</div>
+      <h2>Estimate the losses prevented for your customer base</h2>
+      <p class="lead">For a bank, telecom operator or payments app offering KavachAI to its customers. Move the sliders to match your base. The defaults are placeholders, not measured results; a pilot replaces them with real numbers.</p>
+    </div>
+    <div class="roi">
+      <div class="roi-in" id="roiIn">
+        <div class="cur"><label for="cur">Currency</label><select id="cur"><option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></div>
+      </div>
+      <div class="roi-out">
+        <div class="fine mono" style="letter-spacing:.08em;text-transform:uppercase">Estimated losses prevented per year</div>
+        <div class="big" id="roiBig">–</div>
+        <div id="roiRows"></div>
+        <div class="bars" id="roiBars"></div>
+        <p class="fine">Prevented = checks per year × share that are scams × share of those that would have led to a loss × average loss × share of losses KavachAI prevents. Model cost per check is shown separately; the demo case used about 15 model calls.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="trust">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">04 · Safety and privacy</div>
+      <h2>Designed so the assistant itself can never become a risk</h2>
+      <p class="lead">These controls are enforced in code and covered by automated tests, not by prompt wording.</p>
+    </div>
+    <div class="trust">
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6l-7-3Z" stroke="currentColor" stroke-width="1.7"/></svg>Verified contacts only</h3><p>Every reply is checked before it is sent. Any phone number or link that is not 1930, 112, cybercrime.gov.in, sancharsaathi.gov.in or an official brand domain is blocked and the reply is rewritten.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/></svg>Victim secrets masked</h3><p>OTPs, card, Aadhaar and PAN numbers are masked before any text reaches a model. The scammer's numbers and links are kept, because they are the evidence.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4 4 10-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Consent before sharing</h3><p>The workflow pauses after the reply. Nothing reaches Scam Radar unless the user says yes, and personal details are redacted server-side.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4h10v16H7z" stroke="currentColor" stroke-width="1.7"/><path d="M10 8h4M10 12h4M10 16h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Explainable verdicts</h3><p>Every point of the risk score traces to a quoted phrase, a domain check or a known-script match. The evidence ledger shows exactly how the verdict was reached.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Never repeats the scam</h3><p>Replies warn about a malicious link without ever re-sending it, so the assistant cannot spread the scam it is warning about.</p></div>
+      <div><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Low false alarms</h3><p>Genuine bank OTPs, bills and delivery codes are hard negatives in the test set. Protective wording such as "do not share this OTP" is treated as advice, not a request.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="proof">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">05 · Proof of execution</div>
+      <h2>Every demo message, tested end to end</h2>
+      <p class="lead">Each message goes through the full agent workflow in the automated tests, including the consent step and the WhatsApp channel.</p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Message</th><th>What the agents found</th><th>Verdict</th><th>Reply</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><b>"CBI officer" voice note</b> + already paid</td><td>Transcript: fake CBI, arrest threat, secrecy, payment demand; reported sender; known script</td><td><code>scam</code></td><td>Golden-hour plan in Marathi, complaint pre-filled</td><td><span class="ok">✓ tested</span></td></tr>
+          <tr><td><b>Traffic e-challan SMS</b> (screenshot)</td><td>Look-alike Parivahan domain, 3 days old, .apk download; NEW Scam Radar campaign</td><td><code>scam</code></td><td>Do not install; check only on the official site</td><td><span class="ok">✓ tested</span></td></tr>
+          <tr><td><b>Part-time job</b> (Marathi)</td><td>Task-scam script; Cambodian number reported 54 times</td><td><code>scam</code></td><td>In Marathi</td><td><span class="ok">✓ tested</span></td></tr>
+          <tr><td><b>SBI KYC link</b> (Hindi)</td><td>Look-alike SBI domain on .xyz; KYC credential request</td><td><code>scam</code></td><td>In Hindi</td><td><span class="ok">✓ tested</span></td></tr>
+          <tr><td><b>OLX "army officer"</b> UPI request</td><td>Screenshot shows a collect request: "PIN to receive" is a known trick</td><td><code>scam</code></td><td>Never enter a PIN to receive money</td><td><span class="ok">✓ tested</span></td></tr>
+          <tr><td><b>"Papa, new number"</b> (Hinglish)</td><td>Family impersonation, urgency, reported number</td><td><code>scam</code></td><td>Call them on the old number first</td><td><span class="ok">✓ tested</span></td></tr>
+          <tr><td><b>Genuine bank OTP</b> · <b>genuine electricity bill</b></td><td>Protective wording; official domains only; nothing requested</td><td><code>safe</code></td><td>Reassurance + one safety tip; no consent prompt</td><td><span class="ok">✓ tested</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card"><div class="tag">Quality</div><h3 style="margin-top:6px">25 automated tests</h3><p>Every demo message end to end, consent share and skip, WhatsApp webhook and signature, contact guardrail, PII masking, radar clustering and link forensics.</p></div>
+      <div class="card"><div class="tag">Evaluation</div><h3 style="margin-top:6px">56-message golden set</h3><p>37 scams and 19 genuine messages in four languages: 100% recall, 0% false positives and 97% scam-type accuracy offline, with 8 fresh messages written after tuning. Small and self-authored, so a field dataset is the next step.</p></div>
+      <div class="card"><div class="tag">Interoperability</div><h3 style="margin-top:6px">MCP + WhatsApp</h3><p>Threat intel runs as an MCP server any MCP client can use. The WhatsApp Cloud API adapter verifies webhooks, checks signatures and downloads media.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="architecture">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">06 · Architecture</div>
+      <h2>Agents, intel and channels, each behind a standard interface</h2>
+      <p class="lead">Threat intelligence comes through MCP and users arrive through WhatsApp or the web, so new data sources and channels plug in without changing the agent workflow.</p>
+    </div>
+    <div class="arch">
+      <div class="layer"><div class="tag">Experience</div><h3>Phone + investigation console</h3><ul><li>WhatsApp-style chat with voice notes and screenshots</li><li>Live agent graph, highlighted tactics, evidence ledger</li><li>Scam Radar dashboard with early warnings</li><li>Quality scorecard from the eval harness</li></ul></div>
+      <div class="layer"><div class="tag">Orchestration</div><h3>Google ADK 2 Workflow</h3><ul><li>Parallel fan-out, join, router and a guard loop</li><li>Pause-and-resume for user consent</li><li>Sessions stored in a database</li><li>Gemini via AI Studio or Vertex AI</li></ul></div>
+      <div class="layer"><div class="tag">Intelligence</div><h3>Tools and data</h3><ul><li>Scam-intel MCP server: scripts, campaigns, reports</li><li>Cross-lingual concept embeddings for clustering</li><li>Link, UPI and phone forensics</li><li>PII guard and telemetry plugins</li></ul></div>
+    </div>
+    <p class="fine" style="margin-top:18px">Integration path. Green is built; the rest are adapters behind the same interfaces.</p>
+    <div class="integr">
+      <span class="built">WhatsApp Cloud API</span><span class="built">Scam-intel MCP server</span><span class="built">Scam Radar clustering</span><span class="built">Complaint pre-fill</span>
+      <span>Bank fraud desk hand-off</span><span>Telecom spam feeds</span><span>Live domain age (RDAP)</span><span>IVR / voice channel</span><span>Vertex AI Agent Engine</span>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="rollout">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">07 · Rollout plan</div>
+      <h2>Prove it with one partner's customers in 90 days</h2>
+      <p class="lead">Start with a bank or telecom operator's opted-in customers, measure accuracy against their fraud team, then widen the scope.</p>
+    </div>
+    <div class="phases">
+      <div class="phase-c on"><div class="when">Days 0–30</div><h3>Shadow evaluation</h3><ul><li>Run on the partner's labelled fraud reports and genuine messages</li><li>Compare verdicts with fraud analysts</li><li>Tune thresholds for very low false alarms</li></ul><div class="exit"><b>Exit criteria</b>High recall on labelled scams with a low false-positive rate agreed with the partner</div></div>
+      <div class="phase-c"><div class="when">Days 31–60</div><h3>Opt-in pilot</h3><ul><li>WhatsApp number for opted-in customers in one state</li><li>Marathi, Hindi and English</li><li>Golden-hour cases handed to the partner's fraud desk</li></ul><div class="exit"><b>Exit criteria</b>Measured response time, user satisfaction and money-recovery hand-offs</div></div>
+      <div class="phase-c"><div class="when">Days 61–90</div><h3>Scale</h3><ul><li>More languages and states</li><li>Scam Radar alerts shared with the partner's fraud team</li><li>Monthly accuracy and fairness review</li></ul><div class="exit"><b>Track</b>Checks per day, recall, false alarms, time to verdict, campaigns detected early</div></div>
+    </div>
+
+    <div class="sec-head" style="margin-top:56px">
+      <div class="eyebrow">Risks we plan for</div>
+      <h2>What could go wrong, and the control for each</h2>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Risk</th><th>Control</th></tr></thead>
+        <tbody>
+          <tr><td>A scam is marked safe</td><td>The safe reply always carries a safety tip and never says "definitely safe". Thresholds are tuned for recall, and misses are added to the golden set.</td></tr>
+          <tr><td>The assistant spreads a bad number or link</td><td>A contact guardrail allows only verified helplines and official domains; malicious links are never repeated.</td></tr>
+          <tr><td>Personal data exposure</td><td>Victim secrets are masked before model calls. Radar reports are consent-based and redacted. Private Vertex AI endpoints run in your GCP project.</td></tr>
+          <tr><td>Over-reliance or legal misunderstanding</td><td>Clear "information, not legal advice" wording, and every urgent case points to 1930 and the official portal.</td></tr>
+          <tr><td>Abuse of Scam Radar</td><td>Reports only come from completed investigations with consent. Campaigns need several similar reports before an alert, and alerts are reviewed by people.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <h3>KavachAI · scam shield for Bharat</h3>
+      <p>Written, designed and built by Madhuri Patil, Senior AI Engineer. Multi-agent system on Google ADK 2 with Gemini, MCP, the WhatsApp Cloud API, FastAPI and React.</p>
+      <p style="margin-top:10px">Companion projects: ClaimPilot (AI claims desk), Sentinel (AI incident commander) and Atlas (multi-agent research analyst).</p>
+    </div>
+    <div>
+      <h3>Run the demo locally</h3>
+<pre>cd backend && uv sync
+uv run uvicorn app.main:app      # offline, no keys
+cd ../frontend && npm i && npm run dev
+# real Gemini: KAVACH_MODEL + GOOGLE_API_KEY or Vertex AI</pre>
+    </div>
+  </div>
+</footer>
+
+<div class="lb" id="lb" hidden><img id="lbImg" alt=""></div>
+<script>
+const STEPS = [
+  {img:"shots/1-forward.webp", t:"Forward the frightening call", phase:"Perceive",
+   see:"A Hindi voice note from a 'CBI officer' is forwarded, with the user's own note in Marathi: 'I panicked and just sent ₹50,000. What do I do?' The agent graph lights up on the right.",
+   did:"The perception agent transcribed the voice note. Three specialists then started in parallel: linguist, forensics and threat intel.",
+   why:"People can forward exactly what they received, in any format and language, and nobody has to describe the scam in words."},
+  {img:"shots/2-xray.webp", t:"Every red flag, highlighted", phase:"Investigate",
+   see:"The transcript with each manipulation phrase underlined: fake CBI and police, arrest warrant, 'don't tell anyone', 'transfer immediately'. Beside it, the evidence ledger with a weight for every signal.",
+   did:"The linguist quoted each tactic, forensics found the sender reported 21 times, and threat intel matched a known digital-arrest script and an active Scam Radar campaign through MCP.",
+   why:"The verdict is explainable. Users, families and fraud teams can see exactly why it is a scam."},
+  {img:"shots/3-verdict.webp", t:"Scam, with a golden-hour plan in Marathi", phase:"Reply",
+   see:"A 98% risk ring, 'money already sent: golden hour', and the WhatsApp reply in Marathi with a Call 1930 button and a complaint draft.",
+   did:"The risk engine fused 9 signals. Because the user had already paid, the advisor chose the urgent playbook and pre-filled the cybercrime complaint. The responder wrote in Marathi, and the guardrail verified every contact.",
+   why:"The first hours decide whether money can be frozen. The user gets the right steps immediately, in the language they think in."},
+  {img:"shots/4-plan.webp", t:"A verified action plan", phase:"Advise",
+   see:"The safety plan: call 1930, call the bank on the number on your card, file at cybercrime.gov.in, keep evidence. Below it, the pre-filled complaint with the amount lost.",
+   did:"The advisor took the steps from a verified playbook for this scam type and situation. Only helplines on the allow-list can appear.",
+   why:"The advice is consistent and safe. The assistant can never send someone to a fake 'helpline'."},
+  {img:"shots/5-echallan.webp", t:"A screenshot with a malicious app", phase:"Forensics",
+   see:"A traffic e-challan SMS screenshot. Forensics shows a look-alike Parivahan domain registered 3 days ago, on a risky domain ending, serving an .apk file.",
+   did:"The perception agent read the screenshot. Forensics compared the domain with the official one and checked its age, and threat intel matched the brand-new e-Challan APK campaign.",
+   why:"Malicious apps can take over a phone's SMS and banking. KavachAI stops the install before it happens."},
+  {img:"shots/6-consent.webp", t:"The user decides what is shared", phase:"Consent",
+   see:"The reply asks: 'Reply 1 to share anonymously, or 2 to skip.' After '1', a confirmation says which Scam Radar campaign the report joined.",
+   did:"The workflow paused with a human-in-the-loop request and resumed on the user's answer. The radar agent sent a redacted report through MCP.",
+   why:"Community intelligence is built with consent, without collecting personal data."},
+  {img:"shots/7-safe.webp", t:"A genuine OTP stays genuine", phase:"Hard negative",
+   see:"A real-looking bank OTP SMS gets 'Looks safe' with one safety tip. The advisor and consent steps are skipped.",
+   did:"The linguist recognised 'do not share this OTP' as protective wording, nothing risky was requested and no links were present. The risk engine routed it to the safe path.",
+   why:"Few false alarms means people keep trusting the warnings when it matters."},
+  {img:"shots/8-radar.webp", t:"Scam Radar: early warning", phase:"Radar",
+   see:"An early-warning banner for a NEW e-Challan APK campaign, 30 days of reports by scam type, cities, languages and auto-clustered campaigns with trends.",
+   did:"Every consented report is embedded with cross-lingual concept vectors and clustered online. Trends are computed from daily volumes, and new or surging campaigns raise alerts.",
+   why:"Banks, telecom operators and police can see a new script spreading across cities and languages early, and warn people sooner."},
+  {img:"shots/9-quality.webp", t:"Measured, not assumed", phase:"Quality",
+   see:"The evaluation scorecard: precision, recall, false-positive rate, scam-type and language accuracy, guard violations and latency, with a confusion matrix and per-message results.",
+   did:"The eval harness ran 56 golden messages through the full agent workflow, the same way a real user's message runs.",
+   why:"Quality is visible and repeatable, so every change to prompts or models can be checked before release."}
+];
+const $ = (id) => document.getElementById(id);
+let cur = 0;
+const list = $("steps");
+STEPS.forEach((s, i) => {
+  const li = document.createElement("li");
+  li.innerHTML = `<button role="tab" id="tab${i}" aria-selected="false"><span class="k">${String(i+1).padStart(2,"0")}</span><span><span class="t">${s.t}</span><span class="phase">${s.phase}</span></span></button>`;
+  li.firstChild.addEventListener("click", () => show(i));
+  list.appendChild(li);
+});
+function show(i){
+  cur = Math.max(0, Math.min(STEPS.length - 1, i));
+  const s = STEPS[cur];
+  $("shot").src = s.img; $("shot").alt = s.t;
+  $("stTitle").textContent = `${cur+1}. ${s.t}`;
+  $("stSee").textContent = s.see; $("stDid").textContent = s.did; $("stWhy").textContent = s.why;
+  $("prog").style.width = `${((cur+1)/STEPS.length)*100}%`;
+  $("prev").disabled = cur === 0;
+  $("next").textContent = cur === STEPS.length - 1 ? "Start over ↺" : "Next →";
+  list.querySelectorAll("button").forEach((b, j) => b.setAttribute("aria-selected", j === cur ? "true" : "false"));
+  const tab = $("tab"+cur); if (tab && window.matchMedia("(max-width:980px)").matches) tab.scrollIntoView({block:"nearest", inline:"nearest"});
+}
+$("prev").onclick = () => show(cur - 1);
+$("next").onclick = () => show(cur === STEPS.length - 1 ? 0 : cur + 1);
+document.addEventListener("keydown", (e) => {
+  if (!$("lb").hidden) { if (e.key === "Escape") $("lb").hidden = true; return; }
+  if (e.target.closest && e.target.closest("input,select")) return;
+  const r = $("walkthrough").getBoundingClientRect();
+  if (r.top > window.innerHeight || r.bottom < 0) return;
+  if (e.key === "ArrowRight") show(cur + 1);
+  if (e.key === "ArrowLeft") show(cur - 1);
+});
+$("shotBtn").onclick = () => { $("lbImg").src = STEPS[cur].img; $("lbImg").alt = STEPS[cur].t; $("lb").hidden = false; };
+$("lb").onclick = () => { $("lb").hidden = true; };
+STEPS.forEach(s => { const im = new Image(); im.src = s.img; });
+show(0);
+
+/* Impact estimator - base currency INR */
+const RATES = {INR:1, USD:1/83, EUR:0.92/83, GBP:0.79/83};
+const INPUTS = [
+  {id:"users", label:"Customers offered KavachAI", min:10000, max:20000000, step:10000, v:1000000, fmt:v=>v.toLocaleString("en-IN")},
+  {id:"checks", label:"Messages checked per customer per year", min:0.5, max:24, step:0.5, v:3, fmt:v=>String(v)},
+  {id:"scam", label:"Share of checked messages that are scams", min:5, max:90, step:5, v:40, fmt:v=>v+"%"},
+  {id:"loss", label:"Share of those scams that would have caused a loss", min:0.5, max:20, step:0.5, v:2, fmt:v=>v+"%", hint:"Most people don't pay; this is the share who would have. Assumption to validate in the pilot."},
+  {id:"avg", label:"Average loss per successful scam", min:1000, max:500000, step:1000, v:40000, money:true},
+  {id:"pshare", label:"Share of those losses KavachAI prevents", min:5, max:90, step:5, v:50, fmt:v=>v+"%"},
+  {id:"run", label:"Model cost per check", min:0, max:10, step:0.25, v:1, money:true}
+];
+const roiIn = $("roiIn");
+INPUTS.forEach(f => {
+  const d = document.createElement("div"); d.className = "field";
+  d.innerHTML = `<label for="${f.id}"><span>${f.label}</span><output id="${f.id}o"></output></label><input type="range" id="${f.id}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.v}">${f.hint?`<span class="hint">${f.hint}</span>`:""}`;
+  roiIn.appendChild(d);
+  d.querySelector("input").addEventListener("input", calc);
+});
+$("cur").addEventListener("change", calc);
+function money(v, c){ return new Intl.NumberFormat(c==="INR"?"en-IN":"en-US",{style:"currency",currency:c,maximumFractionDigits: v < 100 ? 2 : 0,notation: Math.abs(v)>=1e7 && c!=="INR"?"compact":"standard"}).format(v); }
+function calc(){
+  const c = $("cur").value, r = RATES[c];
+  const g = id => +$(id).value;
+  INPUTS.forEach(f => { $(f.id+"o").textContent = f.money ? money(g(f.id)*r, c) : f.fmt(g(f.id)); });
+  const checks = g("users")*g("checks"), scams = checks*g("scam")/100, wouldLose = scams*g("loss")/100;
+  const prevented = wouldLose*g("pshare")/100, value = prevented*g("avg")*r, run = checks*g("run")*r;
+  $("roiBig").textContent = money(value, c);
+  $("roiRows").innerHTML = [
+    ["Messages checked per year", Math.round(checks).toLocaleString("en-IN")],
+    ["Scams caught", Math.round(scams).toLocaleString("en-IN")],
+    ["Losses prevented (cases)", Math.round(prevented).toLocaleString("en-IN")],
+    ["Model cost per year", money(run, c)]
+  ].map(([a,b]) => `<div class="out-row"><span>${a}</span><span>${b}</span></div>`).join("");
+  const mx = Math.max(value, run) || 1;
+  $("roiBars").innerHTML = `<div class="bar after"><span>Prevented</span><div class="tr"><i style="width:${(value/mx)*100}%"></i></div><b>${Math.round(value/mx*100)}%</b></div><div class="bar"><span>Model cost</span><div class="tr"><i style="width:${Math.max(1,(run/mx)*100)}%"></i></div><b>${(run/mx*100).toFixed(1)}%</b></div>`;
+}
+calc();
+</script>
+
+</body>
+</html>
